@@ -24,7 +24,8 @@ hist(W)
 # heatmap(W,Rowv = NA, Colv = NA)
 # plot(locs, pch=19, col="red")
 zsp = t(z)
-st_time = Sys.time(); fullySpatial = spDLMGP(z=zsp[,-1], y=yin[,-1],
+st_time = Sys.time(); 
+fullySpatial = spDLMGP(z=zsp[,-1], y=yin[,-1],
                           yy = array(ysp2[,-1,],
                           dim=c(nrow(ysp2),ncol(ysp2)-1,dim(ysp2)[3])),
                           FF=FF, FFc=FFsp,
@@ -39,7 +40,8 @@ st_time = Sys.time(); fullySpatial = spDLMGP(z=zsp[,-1], y=yin[,-1],
                           tune3=.05, tune4=rep(.001,2),
                           niter=2000, burnin=2000/2,
                           nugget=0, sigma_z=rep(1,1),
-                          a0z = 1, b0z=1, S=S); (Sys.time() - st_time)
+                          a0z = 1, b0z=1, S=S); 
+(Sys.time() - st_time)
 matplot(fullySpatial$calibrate,type="l",ylim=c(0,1))
 heatmap((apply(fullySpatial$mc_C,1:2,mean)), Rowv = NA,Colv = NA)
 

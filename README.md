@@ -1,4 +1,6 @@
-# dlmGaSP
-My implementation and extension of the dynamic emulation/calibration methodology of [(Liu &amp; West, 2009)](https://www2.stat.duke.edu/~mw/mwsoftware/DLMGASP/index.html), later applied by (Farah et al., 2014)[https://www.jstor.org/stable/24247380].
+# spSSGP Example
+To run an example analysis using the nonlinear partial differential equation provided in the manuscript, first compile the ```spatialCalibrator.cpp``` function housed within the ```cpp models``` folder. Once this is compiled, the environment will have access to the necessary functions.
 
-This methodology is the focus of my dissertation research. Within my work, I've extended this framework to build a statistical-mechanistic methdology to enable fast emulation and calibration to potentially misspecified systems of partial differential equations.  
+The ```helper.R``` file will generate the synthetic PDE data used for this demo. To fit the spSSGP spatiotemporal model, execute the ```demo.R``` file.
+
+This example illustrates nonlinear PDE inference on a 10 x 10 grid for simplicity. We make use of 25 training runs where the numerical solution to the PDEs are computed across a Latin hypercube design space. The MCMC chain is run for 1000 iterations with the first 500 discarded for warm-up, illustrating the fast convergence of the FFBS algorithm.

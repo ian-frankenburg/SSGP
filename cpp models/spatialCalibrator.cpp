@@ -281,30 +281,29 @@ void calibrateParams(const mat& z, const mat& y,const cube& yy,
     calibrate = calibrate_star;
     M = M_star;
   }
-    //   
-  /// METROPOLIS STEP FOR OBSERVATIONAL VARIANCE
-//   double sigma2_star = exp(log(sigma2_z)+Rcpp::rnorm(1,0,tune2)(0));
-//   for(int j=0; j < params.n_rows; j++){
-//     r(j) = exp(-dot(beta.t() % (calibrate - params.row(j)),(calibrate - params.row(j))));
-//   }
-//   ll_counter = 0; ll_counter_star = 0;
-//   for(int s=0; s<Sp; s++){
-//     for(int t=1; t<T; t++){
-//       sigma_t = sigma2_z + v(t) - v(t)*dot(r, Kinv * r);
-//       mu_t = theta(s,t)*z(s,t-1) + dot(r, Kinv * (yy.slice(s).col(t) - FFc(s).slice(t)*theta(s, t)));
-//       ll_counter += -0.5*log(sigma_t) - 0.5*pow((z(s,t) - mu_t)/sqrt(sigma_t),2);
-//       
-//       sigma_t = sigma2_star + v(t) - v(t)*dot(r, Kinv * r);
-//       ll_counter_star += -0.5*log(sigma_t) - 0.5*pow((z(s,t) - mu_t)/sqrt(sigma_t),2);
-//     }
-//   }
-//   ll_star = ll_counter_star, ll=ll_counter;
-//   
-//   logr = ll_star - ll + log(sigma2_star) - log(sigma2_z);
-//   if(log(R::runif(0,1)) < logr(0,0)){
-//     sigma2_z = sigma2_star;
-//   }
-// }
+  
+  // /// METROPOLIS STEP FOR OBSERVATIONAL VARIANCE
+  // double sigma2_star = exp(log(sigma2_z)+Rcpp::rnorm(1,0,tune2)(0));
+  // for(int j=0; j < params.n_rows; j++){
+  //   r(j) = exp(-dot(beta.t() % (calibrate - params.row(j)),(calibrate - params.row(j))));
+  // }
+  // ll_counter = 0; ll_counter_star = 0;
+  // for(int s=0; s<Sp; s++){
+  //   for(int t=1; t<T; t++){
+  //     sigma_t = sigma2_z + v(t) - v(t)*dot(r, Kinv * r);
+  //     mu_t = theta(s,t)*z(s,t-1) + dot(r, Kinv * (yy.slice(s).col(t) - FFc(s).slice(t)*theta(s, t)));
+  //     ll_counter += -0.5*log(sigma_t) - 0.5*pow((z(s,t) - mu_t)/sqrt(sigma_t),2);
+  // 
+  //     sigma_t = sigma2_star + v(t) - v(t)*dot(r, Kinv * r);
+  //     ll_counter_star += -0.5*log(sigma_t) - 0.5*pow((z(s,t) - mu_t)/sqrt(sigma_t),2);
+  //   }
+  // }
+  // ll_star = ll_counter_star, ll=ll_counter;
+  // 
+  // logr = ll_star - ll + log(sigma2_star) - log(sigma2_z);
+  // if(log(R::runif(0,1)) < logr(0,0)){
+  //   sigma2_z = sigma2_star;
+  // }
 }
 
 void sampleVar(mat z, mat emulated, double& sigma2){
@@ -420,9 +419,9 @@ Rcpp::List spDLMGP(const mat& z, const mat& y,  const cube& yy, const vec yinit,
       mc_C.slice(i-burnin) = C.slice(3);
     }
   }
-  std::cout << "AVG KALMAN TIME:" << kalman_time << std::endl;
-  std::cout << "AVG BACKWARD TIME:" << backwardState_time << std::endl;
-  std::cout << "AVG KERNEL TIME:" << kernel_time << std::endl;
+  std::cout << "Avg. Kalman filter time (microseconds):" << kalman_time << std::endl;
+  std::cout << "Avg. Backward Sampling time (microseconds):" << backwardState_time << std::endl;
+  std::cout << "Avg. GP parameter sampling time (microseconds):" << kernel_time << std::endl;
   
   // calibration step
   mat mc_calibrate(niter-burnin, params.n_cols, fill::zeros);
@@ -463,7 +462,7 @@ Rcpp::List spDLMGP(const mat& z, const mat& y,  const cube& yy, const vec yinit,
   }
   stop_overall = high_resolution_clock::now();
   duration = duration_cast<seconds>(stop_overall - start_overall);
-  std::cout << "TOTAL TIME:" << duration.count() << std::endl;
+  // std::cout << "TOTAL TIME:" << duration.count() << std::endl;
   Rcpp::List out(5);
   out["yeta"] = yeta_draw;
   out["v"] = mc_v;
