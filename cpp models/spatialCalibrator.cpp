@@ -177,7 +177,7 @@ void kernel(const cube& y, const mat& params, const mat& theta, vec& beta,
 double calPrior(rowvec calibrate){
   rowvec out(calibrate.n_elem, fill::zeros);
   for(uword i=0; i < out.n_elem; i++){
-    out(i) = R::dbeta(calibrate(i),3,3,true);
+    out(i) = R::dbeta(calibrate(i),1,1,true);
   }
   return(sum(out));
 }
@@ -320,11 +320,11 @@ Rcpp::List spDLMGP(const mat& z, const mat& y,  const cube& yy, const vec yinit,
                               const mat& params,
                               const double delta_v, const double delta_w,
                               vec& tune, const vec& tune2, 
-                              const double nugget,
-                              const int S)
+                              const double nugget)
 {
   int T = y.n_cols;
   int p = y.n_rows;
+  int S = z.n_rows;
   int p2 = S;
   mat m0 = ones(S);
   mat C0 = eye(S,S);

@@ -10,7 +10,7 @@ spSSGP = spDLMGP(z=zsp[,-1], y=yin[,-1],
                        params=theta_design,
                        tune=rep(.001,3), tune2=rep(.01,3),
                        niter=1000, burnin=1000/2,
-                       nugget=0, S=S)
+                       nugget=0)
 {
   library(latex2exp)
   par(mfrow=c(2,2))
