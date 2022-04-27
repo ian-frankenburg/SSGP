@@ -225,7 +225,7 @@ void calibrateParams(const mat& z, const mat& y,const cube& yy,
                      const vec& v, const vec tune, const double tune2, 
                      const vec& beta, const mat& K,
                      const cube FF, const field<cube>& FFc, rowvec& calibrate, 
-                     double& sigma2_z, double a0, double b0, const int Sp)
+                     double& sigma2_z, const int Sp)
 {
   // compute S_t and M_t where M_t=phi[n,]*z[n-1]+r'*L*(y[,n]-to_matrix(F[,,n-lags]) * phi[n,])
   // S_t = sig_z+1-r'*L*r
@@ -316,20 +316,25 @@ void sampleVar(mat z, mat emulated, double& sigma2){
 // [[Rcpp::export]]
 Rcpp::List spDLMGP(const mat& z, const mat& y,  const cube& yy, const vec yinit,
                               const uword& niter, const uword& burnin,
-                              mat& m0, mat& C0, mat& W,
                               const cube& FF, const field<cube>& FFc,
-                              const mat& params, const mat& spparams,
-                              const rowvec pred_params,
+                              const mat& params,
                               const double delta_v, const double delta_w,
-                              const vec& alpha0, const vec& beta0, 
-                              vec& tune, const vec& tune2, double tune3, const vec& tune4,
-                              double& sigma_z, const double nugget,
-                              const double a0z, const double b0z, 
+                              vec& tune, const vec& tune2, 
+                              const double nugget,
                               const int S)
 {
   int T = y.n_cols;
   int p = y.n_rows;
   int p2 = S;
+  mat m0 = ones(S);
+  mat C0 = eye(S,S);
+  mat W = C0;
+  vec alpha0 = ones(1);
+  vec beta0 = ones(1); 
+  double sigma_z=1.0;
+  double a0z=1.0, b0z=1.0;
+  const double tune3=.01;
+  // tune3 = 0.01*tune3;
   // initialize and allocate variables necessary for forward filtering and 
   // backward sampling
   // for code readability, order according to Kalman filter, then backward sampele, etc
@@ -357,13 +362,12 @@ Rcpp::List spDLMGP(const mat& z, const mat& y,  const cube& yy, const vec yinit,
   Q(p,p,fill::zeros), H(p2,p2,fill::eye), theta(p2,T,fill::zeros), h(p2, 1, fill::ones);
   
   cube mc_C(p2, p2, niter, fill::zeros);
-  vec gpbeta(params.n_cols, fill::ones), spgpbeta(spparams.n_cols, fill::ones),
+  vec gpbeta(params.n_cols, fill::ones),
   alpha(T, fill::ones), beta(T, fill::ones), s(T, fill::ones), 
   f(p, fill::zeros), v(T, fill::zeros);
   
   gpbeta = pow(Rcpp::rnorm(params.n_cols, 5, 1), 2);
-  spgpbeta = pow(Rcpp::rnorm(spparams.n_cols, 5, 1) ,2);
-  
+
   mat mc_beta(params.n_cols, niter-burnin, fill::zeros);
   mat mc_v(T, niter-burnin, fill::zeros);
   double progress = 0;
@@ -434,7 +438,7 @@ Rcpp::List spDLMGP(const mat& z, const mat& y,  const cube& yy, const vec yinit,
   for(int i=0; i<niter; i++) {
     draw = (int) Rcpp::runif(1, 0, niter-burnin)(0);
     for(int s=0;s<S;s++){
-      yeta_draw.slice(s).col(i) = emulate(yy.slice(s), pred_params,
+      yeta_draw.slice(s).col(i) = emulate(yy.slice(s), calibrate,
                         params, mc_beta.col(draw),
                         mc_theta.slice(draw).row(s),
                         mc_K.slice(draw),
@@ -450,7 +454,7 @@ Rcpp::List spDLMGP(const mat& z, const mat& y,  const cube& yy, const vec yinit,
                     mc_beta.col(draw),
                     mc_K.slice(draw),
                     FF, FFc,
-                    calibrate, sigma_z, a0z, b0z, S);
+                    calibrate, sigma_z, S);
     for(int sp=0; sp<S; sp++){
       yeta_draw_mat.col(sp) = yeta_draw.slice(sp).col(i);
     }

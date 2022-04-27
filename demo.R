@@ -5,18 +5,12 @@ spSSGP = spDLMGP(z=zsp[,-1], y=yin[,-1],
                        yy = array(ysp2[,-1,],
                             dim=c(nrow(ysp2),ncol(ysp2)-1,dim(ysp2)[3])),
                        FF=FF, FFc=FFsp,
-                       m0=matrix(rep(0,S)),
-                       C0=diag(S), W=diag(S),
-                       yinit = ysp[1,,1], alpha0=.1, beta0=.1,
+                       yinit = ysp[1,,1],
                        delta_v=.95, delta_w=.95,
                        params=theta_design,
-                       spparams = theta_design,
-                       pred_params = test,
                        tune=rep(.001,3), tune2=rep(.01,3),
-                       tune3=.05, tune4=rep(.001,2),
                        niter=1000, burnin=1000/2,
-                       nugget=0, sigma_z=sigma_z,
-                       a0z = 1, b0z=1, S=S)
+                       nugget=0, S=S)
 {
   library(latex2exp)
   par(mfrow=c(2,2))
@@ -46,10 +40,10 @@ spSSGP = spDLMGP(z=zsp[,-1], y=yin[,-1],
     }
     points(y=0,x=test[i], col="red", lwd=5,pch=19)
   }
-  hist(sqrt(spSSGP$mc_sigma2), cex.lab=2,ylab="",
+  hist(sqrt(spSSGP$mc_sigma2), cex.lab=2,ylab="", xlim=c(0,5),
        col=rgb(0/255,0/255,.502,.7), breaks=10, main="",
        freq = 0, xlab=TeX('$\\sigma_z $'), add=0)
-  hist(sqrt(1/rgamma(nrow(spSSGP$calibrate),.1,.1)), breaks=10, freq = 0, xlab=TeX(
+  hist((rgamma(nrow(spSSGP$calibrate),1,1)), breaks=10, freq = 0, xlab=TeX(
     paste0('$\\eta_', i, "$")),
     col=rgb(.678, .847, .902, alpha=.5),add=T)
   points(y=0,x=sigma_z, col="red", lwd=4,pch=19)
