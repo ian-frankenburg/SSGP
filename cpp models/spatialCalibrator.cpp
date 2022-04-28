@@ -101,41 +101,6 @@ double priorBeta(vec beta){
   return(sum(out));
 }
 
-// void kernel(const mat& y, const mat& params, const mat& theta, vec& beta,
-//             const cube& FF, mat& K, const vec tune, const vec& v, 
-//             const double nugget, const int S){
-//   uword T = y.n_cols;
-//   uword p = params.n_rows;
-//   //compute proposed kernel
-//   vec eta = log(beta);
-//   vec beta_star = exp(eta+rmvnorm(1, zeros(beta.n_rows,1), diagmat(tune)).t());
-//   mat K_star = eye(params.n_rows, params.n_rows);
-//   for(uword i=0; i<params.n_rows; i++){
-//     for (uword j = (i+1); j< params.n_rows; j++){
-//       K_star(i, j) = exp(-dot(beta_star.t() % (params.row(i) - params.row(j)),(params.row(i) - params.row(j))));
-//       K_star(j, i) = K_star(i, j);
-//     }
-//   }
-//   mat Sigma_star = kron(eye(S, S), K_star);
-//   mat Sigma = kron(eye(S, S), K);
-//   
-//   // compute likelihoods
-//   vec L(T, fill::zeros), L_star(T, fill::zeros);
-//   for(uword i=0; i < L.n_elem; i++){
-//     L_star(i) = dmvnorm(y.col(i).t(), FF.slice(i)*theta.col(i), v(i)*(Sigma_star), true)(0,0);
-//     L(i) = dmvnorm(y.col(i).t(), FF.slice(i)*theta.col(i), v(i)*Sigma, true)(0,0);
-//   }
-//   // // // compute MH ratio
-//   double logr = sum(L_star) + priorBeta(beta_star) + sum(log(1/beta))
-//     - sum(L) - priorBeta(beta) - sum(log(1/beta_star));
-//   //std::cout << logr << std::endl;
-//   if(log(R::runif(0,1)) < logr){
-//     beta = beta_star;
-//     K=K_star;
-//   }
-//   K = K + nugget * eye(K.n_cols, K.n_cols);
-// }
-
 void kernel(const cube& y, const mat& params, const mat& theta, vec& beta,
             const field<cube>& FF, mat& K, const vec tune, const vec& v, 
             const double nugget, const int S)
@@ -185,9 +150,6 @@ double calPrior(rowvec calibrate){
 vec emulate(const mat& y, const rowvec& pred_params, const mat& params, 
             const vec& beta, const mat& theta,
             const mat& K, const cube& F, double yinit, const vec v){
-  // this function will be built so that it gives one posterior predictive draw
-  // thus, it must be called multiple times to build a posterior predictive distribution
-  // the input arguments are one draw from the respective posterior parameters
   int T = y.n_cols;
   vec gamma_z(params.n_rows, fill::zeros);
   vec mu_z(T,fill::zeros);
@@ -245,17 +207,6 @@ void calibrateParams(const mat& z, const mat& y,const cube& yy,
     r(j) = exp(-dot(beta.t() % (calibrate - params.row(j)),(calibrate - params.row(j))));
     r_star(j) = exp(-dot(beta.t() % (calibrate_star - params.row(j)),(calibrate_star - params.row(j))));
   }
-  // vec r = join_vert(rr,rr);
-  // vec r_star = join_vert(rr_star,rr_star);
-  /// METROPOLIS STEP FOR CALIBRATION PARAMETERS
-  // for(int t=1; t<T; t++){
-  //   for(int s=0; s<Sp; s++){
-  //     M(s, t) = theta(s, t)*z(s, t-1) + dot(r, Kinv * (y.col(t) - FF.slice(t) * theta.col(t)));
-  //     M_star(s, t) = theta(s, t)*z(s, t-1) + dot(r_star, Kinv * (y.col(t) - FF.slice(t) * theta.col(t)));
-  //     S(s, t) = sigma2_z + v(t) - v(t)*dot(r, Kinv * r);
-  //     S_star(s, t) = sigma2_z + v(t) - v(t)*dot(r_star, Kinv * r_star);
-  //   }
-  // }
   mat ll(1,1,fill::zeros), ll_star(1,1,fill::zeros);
   double sigma_t, mu_t;
   double ll_counter=0, ll_counter_star=0;
