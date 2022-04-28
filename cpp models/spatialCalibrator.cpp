@@ -182,11 +182,11 @@ vec emulate(const mat& y, const rowvec& pred_params, const mat& params,
 }
 
 
-void calibrateParams(const mat& z, const mat& y,const cube& yy,
+void calibrateParams(const mat& z, const mat& y,const cube& y_cube,
                      const mat& theta, const mat& params,
                      const vec& v, const vec tune, const double tune2, 
                      const vec& beta, const mat& K,
-                     const cube FF, const field<cube>& FFc, rowvec& calibrate, 
+                     const cube FF, const field<cube>& FF_cube, rowvec& calibrate, 
                      double& sigma2_z, const int Sp)
 {
   // compute S_t and M_t where M_t=phi[n,]*z[n-1]+r'*L*(y[,n]-to_matrix(F[,,n-lags]) * phi[n,])
@@ -214,11 +214,11 @@ void calibrateParams(const mat& z, const mat& y,const cube& yy,
   for(int s=0; s<Sp; s++){
     for(int t=1; t<T; t++){
       sigma_t = sigma2_z + v(t) - v(t)*dot(r, Kinv * r);
-      mu_t = theta(s,t)*z(s,t-1) + dot(r, Kinv * (yy.slice(s).col(t) - FFc(s).slice(t)*theta(s, t)));
+      mu_t = theta(s,t)*z(s,t-1) + dot(r, Kinv * (y_cube.slice(s).col(t) - FF_cube(s).slice(t)*theta(s, t)));
       ll_counter += -0.5*log(sigma_t) - 0.5*pow((z(s,t) - mu_t)/sqrt(sigma_t),2);
       
       sigma_t = sigma2_z + v(t) - v(t)*dot(r_star, Kinv * r_star);
-      mu_t = theta(s,t)*z(s,t-1) + dot(r_star, Kinv * (yy.slice(s).col(t) - FFc(s).slice(t)*theta(s, t)));
+      mu_t = theta(s,t)*z(s,t-1) + dot(r_star, Kinv * (y_cube.slice(s).col(t) - FF_cube(s).slice(t)*theta(s, t)));
       ll_counter_star += -0.5*log(sigma_t) - 0.5*pow((z(s,t) - mu_t)/sqrt(sigma_t),2);
     }
   }
@@ -242,7 +242,7 @@ void calibrateParams(const mat& z, const mat& y,const cube& yy,
   // for(int s=0; s<Sp; s++){
   //   for(int t=1; t<T; t++){
   //     sigma_t = sigma2_z + v(t) - v(t)*dot(r, Kinv * r);
-  //     mu_t = theta(s,t)*z(s,t-1) + dot(r, Kinv * (yy.slice(s).col(t) - FFc(s).slice(t)*theta(s, t)));
+  //     mu_t = theta(s,t)*z(s,t-1) + dot(r, Kinv * (y_cube.slice(s).col(t) - FF_cube(s).slice(t)*theta(s, t)));
   //     ll_counter += -0.5*log(sigma_t) - 0.5*pow((z(s,t) - mu_t)/sqrt(sigma_t),2);
   // 
   //     sigma_t = sigma2_star + v(t) - v(t)*dot(r, Kinv * r);
@@ -265,9 +265,9 @@ void sampleVar(mat z, mat emulated, double& sigma2){
 
 
 // [[Rcpp::export]]
-Rcpp::List spDLMGP(const mat& z, const mat& y,  const cube& yy, const vec yinit,
+Rcpp::List spDLMGP(const mat& z, const mat& y,  const cube& y_cube, const vec yinit,
                               const uword& niter, const uword& burnin,
-                              const cube& FF, const field<cube>& FFc,
+                              const cube& FF, const field<cube>& FF_cube,
                               const mat& params,
                               const double delta_v, const double delta_w,
                               vec& tune, const vec& tune2, 
@@ -360,7 +360,7 @@ Rcpp::List spDLMGP(const mat& z, const mat& y,  const cube& yy, const vec yinit,
     
     // // // // // sample kernel parameters
     start = high_resolution_clock::now();
-    kernel(yy, params, theta, gpbeta, FFc, K, tune, v, nugget, S);
+    kernel(y_cube, params, theta, gpbeta, FF_cube, K, tune, v, nugget, S);
     stop = high_resolution_clock::now();
     duration = duration_cast<microseconds>(stop - start);
     kernel_time += duration.count() / ((double) niter);
@@ -389,22 +389,22 @@ Rcpp::List spDLMGP(const mat& z, const mat& y,  const cube& yy, const vec yinit,
   for(int i=0; i<niter; i++) {
     draw = (int) Rcpp::runif(1, 0, niter-burnin)(0);
     for(int s=0;s<S;s++){
-      yeta_draw.slice(s).col(i) = emulate(yy.slice(s), calibrate,
+      yeta_draw.slice(s).col(i) = emulate(y_cube.slice(s), calibrate,
                         params, mc_beta.col(draw),
                         mc_theta.slice(draw).row(s),
                         mc_K.slice(draw),
-                        FFc(s),
+                        FF_cube(s),
                         yinit(s),
                         mc_v.col(draw));
     }
-    calibrateParams(z, y, yy,
+    calibrateParams(z, y, y_cube,
                     mc_theta.slice(draw),
                     params,
                     mc_v.col(draw),
                     tune2, tune3,
                     mc_beta.col(draw),
                     mc_K.slice(draw),
-                    FF, FFc,
+                    FF, FF_cube,
                     calibrate, sigma_z, S);
     for(int sp=0; sp<S; sp++){
       yeta_draw_mat.col(sp) = yeta_draw.slice(sp).col(i);
