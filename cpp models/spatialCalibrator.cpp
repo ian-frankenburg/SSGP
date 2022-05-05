@@ -265,9 +265,10 @@ void sampleVar(mat z, mat emulated, double& sigma2){
 
 
 // [[Rcpp::export]]
-Rcpp::List spDLMGP(const mat& z, const mat& y,  const cube& y_cube, const vec yinit,
+Rcpp::List spSSGP(const mat& z, const mat& y,  const cube& y_cube, const vec yinit,
                               const uword& niter, const uword& burnin,
-                              const cube& FF, const field<cube>& FF_cube,
+                              const cube& FF, const field<cube>& FF_cube, 
+                              const mat& C0, const mat& W,
                               const mat& params,
                               const double delta_v, const double delta_w,
                               vec& tune, const vec& tune2, 
@@ -277,9 +278,7 @@ Rcpp::List spDLMGP(const mat& z, const mat& y,  const cube& y_cube, const vec yi
   int p = y.n_rows;
   int S = z.n_rows;
   int p2 = S;
-  mat m0 = ones(S);
-  mat C0 = eye(S,S);
-  mat W = C0;
+  mat m0 = zeros(S);
   vec alpha0 = ones(1);
   vec beta0 = ones(1); 
   double sigma_z=1.0;
@@ -312,7 +311,7 @@ Rcpp::List spDLMGP(const mat& z, const mat& y,  const cube& y_cube, const vec yi
   mat a(p2,T,fill::zeros), m(p2,T,fill::zeros),
   Q(p,p,fill::zeros), H(p2,p2,fill::eye), theta(p2,T,fill::zeros), h(p2, 1, fill::ones);
   
-  cube mc_C(p2, p2, niter, fill::zeros);
+  cube mc_C(p2, p2, niter-burnin, fill::zeros);
   vec gpbeta(params.n_cols, fill::ones),
   alpha(T, fill::ones), beta(T, fill::ones), s(T, fill::ones), 
   f(p, fill::zeros), v(T, fill::zeros);

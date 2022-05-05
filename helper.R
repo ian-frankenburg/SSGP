@@ -140,8 +140,9 @@ calcSigma <- function(X,l) {
 }
 X = as.matrix(expand.grid(Gridx$x.mid,Gridx$x.mid)[locs,], ncol=2)
 zsp = t(z)
-
-
+X = as.matrix(expand.grid(Gridx$x.mid,Gridx$x.mid)[locs,], ncol=2)
+C0=calcSigma(X,.09)
+heatmap(C0,Rowv = NA,Colv = NA)
 # library(lhs)
 # library(mbr)
 # library(deSolve)
