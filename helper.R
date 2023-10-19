@@ -86,7 +86,6 @@ for(i in 1:dim(ysp_old)[3]){
   }
   FFsp[[i]] = tempArr
 }
-library(LICORS)
 unscaled = theta_design
 x = theta_design
 for(i in 1:ncol(theta_design)){

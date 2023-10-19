@@ -1,4 +1,5 @@
 set.seed(1)
+install.packages("LICORS")
 source("helper.R")
 set.seed(1)
 spSSGP_fit = spSSGP(z=zsp[,-1], y=yin[,-1],

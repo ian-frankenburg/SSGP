@@ -24,7 +24,15 @@ st_time = Sys.time();
 X = as.matrix(expand.grid(Gridx$x.mid,Gridx$x.mid)[locs,], ncol=2)
 W=(.4*as.matrix(mat)+diag(S))
 heatmap(W,Rowv = NA,Colv = NA)
-fullySpatial = spDLMGP(z=t(z)[,-1], y=yin[,-1],
+# Rcpp::List spSSGP(const mat& z, const mat& y,  const cube& y_cube, const vec yinit,
+#                   const uword& niter, const uword& burnin,
+#                   const cube& FF, const field<cube>& FF_cube, 
+#                   const mat& C0, const mat& W,
+#                   const mat& params,
+#                   const double delta_v, const double delta_w,
+#                   vec& tune, const vec& tune2, 
+#                   const double nugget)
+fullySpatial = spSSGP(z=t(z)[,-1], y=yin[,-1],
                  yy = array(ysp2[,-1,],
                             dim=c(nrow(ysp2),ncol(ysp2)-1,dim(ysp2)[3])),
                  FF=FF, FFc=FFsp,

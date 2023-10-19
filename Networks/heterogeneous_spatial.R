@@ -145,7 +145,7 @@ for(i in 1:dim(ysp2)[3]){
   }
   FFsp[[i]] = tempArr
 }
-library(LICORS)
+# library(LICORS)
 unscaled = theta_design
 x = theta_design
 for(i in 1:ncol(theta_design)){
@@ -215,7 +215,7 @@ mu=(apply(zrep,c(1,3),mean))
 sd = (apply(zrep,c(1,3),sd))
 # matplot(mu,type="l")
 # matplot(z,type="l")
-RMSE(z[-1,], mu)
+MLmetrics::RMSE(z[-1,], mu)
 (GRS = -sum((z[-1,]-mu)^2)-2*sum(log(sd)))
 # # 
 zrep = fullySpatial$yeta

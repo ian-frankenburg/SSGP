@@ -4,7 +4,6 @@
 using namespace arma;
 using namespace std::chrono;
 
-// kalman filter for forward pass
 void kalman(const mat& y, const vec& m0, const mat& C0,
             const cube& FF,
             const mat& Sigma, const mat& W,
@@ -15,17 +14,17 @@ void kalman(const mat& y, const vec& m0, const mat& C0,
   uword T = y.n_cols;
   int S = m0.n_elem;
   a.col(0) =  m0.col(0);
-  //R.slice(0) = C0/delta_w;
-  R.slice(0) = C0 + W;
+  R.slice(0) = C0/delta_w;
+  // R.slice(0) = C0 + W;
   mat f = FF.slice(0) * a.col(0);
   mat V = kron(eye(C0.n_cols,C0.n_cols), Sigma);
   mat invV = kron(eye(C0.n_cols,C0.n_cols), inv(Sigma));
-  mat Q = FF.slice(0) * R.slice(0) * FF.slice(0).t() + V;
-  mat Qinv = inv(Q);
-  // mat invVFF = invV*FF.slice(0);
-  // mat Qinv = invV - invVFF*
-  //   inv(inv(R.slice(0))+FF.slice(0).t()*invVFF)*
-  //   invVFF.t();
+  // mat Q = FF.slice(0) * R.slice(0) * FF.slice(0).t() + V;
+  // mat Qinv = inv(Q);
+  mat invVFF = invV*FF.slice(0);
+  mat Qinv = invV - invVFF*
+    inv(inv(R.slice(0))+FF.slice(0).t()*invVFF)*
+    invVFF.t();
   m.col(0) = a.col(0) + R.slice(0) * FF.slice(0).t() * Qinv * (y.col(0) - f.col(0));
   C.slice(0) = R.slice(0) - R.slice(0) * FF.slice(0).t() * Qinv * FF.slice(0) * R.slice(0);
   // modify alpha and beta for discount factor
@@ -34,16 +33,16 @@ void kalman(const mat& y, const vec& m0, const mat& C0,
   for(uword t=1; t<T; t++){
     // # // predict
     a.col(t) =  m.col(t-1);
-    // R.slice(t) =  C.slice(t-1)/delta_w;
-    R.slice(t) =  C.slice(t-1) + W;
+    R.slice(t) =  C.slice(t-1)/delta_w;
+    // R.slice(t) =  C.slice(t-1) + W;
     // # // marginalize
     f = FF.slice(t) * a.col(t);
-    Q = FF.slice(t) * R.slice(t) * FF.slice(t).t() + V;
-    Qinv = inv(Q);
-    // invVFF = invV*FF.slice(t);
-    // Qinv = invV - invVFF*
-    //   inv(inv(R.slice(t))+FF.slice(t).t()*invVFF)*
-    //   invVFF.t();
+    // Q = FF.slice(t) * R.slice(t) * FF.slice(t).t() + V;
+    // Qinv = inv(Q);
+    invVFF = invV*FF.slice(t);
+    Qinv = invV - invVFF*
+      inv(inv(R.slice(t))+FF.slice(t).t()*invVFF)*
+      invVFF.t();
     // # // discount factors
     alpha(t) = delta_v*alpha(t-1) + 0.5*y.n_rows;
     beta(t) = delta_v*beta(t-1) + 0.5*dot(y.col(t) - f, Qinv * (y.col(t) - f));
