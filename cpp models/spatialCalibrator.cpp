@@ -15,17 +15,17 @@ void kalman(const mat& y, const vec& m0, const mat& C0,
   uword T = y.n_cols;
   int S = m0.n_elem;
   a.col(0) =  m0.col(0);
-  //R.slice(0) = C0/delta_w;
+  // R.slice(0) = C0/delta_w;
   R.slice(0) = C0 + W;
   mat f = FF.slice(0) * a.col(0);
   mat V = kron(eye(C0.n_cols,C0.n_cols), Sigma);
   mat invV = kron(eye(C0.n_cols,C0.n_cols), inv(Sigma));
   mat Q = FF.slice(0) * R.slice(0) * FF.slice(0).t() + V;
-  mat Qinv = inv(Q);
-  // mat invVFF = invV*FF.slice(0);
-  // mat Qinv = invV - invVFF*
-  //   inv(inv(R.slice(0))+FF.slice(0).t()*invVFF)*
-  //   invVFF.t();
+  // mat Qinv = inv(Q);
+  mat invVFF = invV*FF.slice(0);
+  mat Qinv = invV - invVFF*
+    inv(inv(R.slice(0))+FF.slice(0).t()*invVFF)*
+    invVFF.t();
   m.col(0) = a.col(0) + R.slice(0) * FF.slice(0).t() * Qinv * (y.col(0) - f.col(0));
   C.slice(0) = R.slice(0) - R.slice(0) * FF.slice(0).t() * Qinv * FF.slice(0) * R.slice(0);
   // modify alpha and beta for discount factor
@@ -39,11 +39,11 @@ void kalman(const mat& y, const vec& m0, const mat& C0,
     // # // marginalize
     f = FF.slice(t) * a.col(t);
     Q = FF.slice(t) * R.slice(t) * FF.slice(t).t() + V;
-    Qinv = inv(Q);
-    // invVFF = invV*FF.slice(t);
-    // Qinv = invV - invVFF*
-    //   inv(inv(R.slice(t))+FF.slice(t).t()*invVFF)*
-    //   invVFF.t();
+    // Qinv = inv(Q);
+    invVFF = invV*FF.slice(t);
+    Qinv = invV - invVFF*
+      inv(inv(R.slice(t))+FF.slice(t).t()*invVFF)*
+      invVFF.t();
     // # // discount factors
     alpha(t) = delta_v*alpha(t-1) + 0.5*y.n_rows;
     beta(t) = delta_v*beta(t-1) + 0.5*dot(y.col(t) - f, Qinv * (y.col(t) - f));
@@ -53,19 +53,7 @@ void kalman(const mat& y, const vec& m0, const mat& C0,
   }
 }
 
-void backwardVolatility(const vec& n, const vec& d, 
-                        const double delta_v, vec& v){
-  uword T = n.n_elem;
-  double vinv, v_star;
-  vinv = Rcpp::rgamma(1,n(T-1), 1.0/d(T-1))(0);
-  v(T-1) = 1.0/vinv;
-  for(int t=T-2; t>=0; t--){
-    v_star = Rcpp::rgamma(1,(1-delta_v)*n(t+1), 1.0/d(t))(0);
-    vinv = delta_v*vinv + v_star;
-    v(t) = 1.0/vinv;
-  }
-}
-
+// sample smoothed latent state (backward step)
 void backwardState(mat& theta, 
                    const mat& a, 
                    const mat& m, 
@@ -87,10 +75,32 @@ void backwardState(mat& theta,
   for(int t=T-2; t>=0; t--){
     Rinv = inv(R.slice(t+1));
     s = m.col(t) + C.slice(t)*Rinv*(s-a.col(t+1));
-    S = C.slice(t) + C.slice(t)*Rinv*(R.slice(t+1)-S)*Rinv*C.slice(t);
+    S = C.slice(t) - C.slice(t)*Rinv*(R.slice(t+1)-S)*Rinv*C.slice(t);
     theta.col(t) = rmvnorm(1, s, S+nugget*eye(S.n_rows,S.n_cols)).t();
   }
 }
+
+// backward sample time-varying variance
+void backwardVolatility(const vec& n, const vec& d, 
+                        const double delta_v, vec& v){
+  uword T = n.n_elem;
+  double vinv, v_star;
+  vinv = Rcpp::rgamma(1,n(T-1), 1.0/d(T-1))(0);
+  v(T-1) = 1.0/vinv;
+  for(int t=T-2; t>=0; t--){
+    v_star = Rcpp::rgamma(1,(1-delta_v)*n(t+1), 1.0/d(t))(0);
+    vinv = delta_v*vinv + v_star;
+    v(t) = 1.0/vinv;
+  }
+}
+
+// backward sample time-varying variance
+// page 172 in DLM in R
+void sampleW(const mat& theta, const vec& d, 
+                        const double delta_v, vec& v){
+
+}
+
 
 // eventually change this to suggestion by Higdon
 // check Stan code
@@ -102,6 +112,7 @@ double priorBeta(vec beta){
   return(sum(out));
 }
 
+// build and sample GP kernel parameters using Metropolis-Hastings
 void kernel(const cube& y, const mat& params, const mat& theta, vec& beta,
             const field<cube>& FF, mat& K, const vec tune, const vec& v, 
             const double nugget, const int S)
@@ -148,6 +159,7 @@ double calPrior(rowvec calibrate){
   return(sum(out));
 }
 
+// [[Rcpp::export]]
 vec emulate(const mat& y, const rowvec& pred_params, const mat& params, 
             const vec& beta, const mat& theta,
             const mat& K, const cube& F, double yinit, const vec v){
@@ -233,29 +245,6 @@ void calibrateParams(const mat& z, const mat& y,const cube& y_cube,
     calibrate = calibrate_star;
     M = M_star;
   }
-  
-  // /// METROPOLIS STEP FOR OBSERVATIONAL VARIANCE
-  // double sigma2_star = exp(log(sigma2_z)+Rcpp::rnorm(1,0,tune2)(0));
-  // for(int j=0; j < params.n_rows; j++){
-  //   r(j) = exp(-dot(beta.t() % (calibrate - params.row(j)),(calibrate - params.row(j))));
-  // }
-  // ll_counter = 0; ll_counter_star = 0;
-  // for(int s=0; s<Sp; s++){
-  //   for(int t=1; t<T; t++){
-  //     sigma_t = sigma2_z + v(t) - v(t)*dot(r, Kinv * r);
-  //     mu_t = theta(s,t)*z(s,t-1) + dot(r, Kinv * (y_cube.slice(s).col(t) - FF_cube(s).slice(t)*theta(s, t)));
-  //     ll_counter += -0.5*log(sigma_t) - 0.5*pow((z(s,t) - mu_t)/sqrt(sigma_t),2);
-  // 
-  //     sigma_t = sigma2_star + v(t) - v(t)*dot(r, Kinv * r);
-  //     ll_counter_star += -0.5*log(sigma_t) - 0.5*pow((z(s,t) - mu_t)/sqrt(sigma_t),2);
-  //   }
-  // }
-  // ll_star = ll_counter_star, ll=ll_counter;
-  // 
-  // logr = ll_star - ll + log(sigma2_star) - log(sigma2_z);
-  // if(log(R::runif(0,1)) < logr(0,0)){
-  //   sigma2_z = sigma2_star;
-  // }
 }
 
 void sampleVar(mat z, mat emulated, double& sigma2){
@@ -266,7 +255,7 @@ void sampleVar(mat z, mat emulated, double& sigma2){
 
 
 // [[Rcpp::export]]
-Rcpp::List spSSGP(const mat& z, const mat& y,  const cube& y_cube, const vec yinit,
+Rcpp::List spDLMGP(const mat& z, const mat& y,  const cube& y_cube, const vec yinit,
                               const uword& niter, const uword& burnin,
                               const cube& FF, const field<cube>& FF_cube, 
                               const mat& C0, const mat& W,
@@ -288,7 +277,7 @@ Rcpp::List spSSGP(const mat& z, const mat& y,  const cube& y_cube, const vec yin
   // tune3 = 0.01*tune3;
   // initialize and allocate variables necessary for forward filtering and 
   // backward sampling
-  // for code readability, order according to Kalman filter, then backward sampele, etc
+  // for code readability, order according to Kalman filter, then backward sample, etc
   
   field<cube> mc_W(niter-burnin);
   for(int i=0; i<niter-burnin; i++){
@@ -300,7 +289,6 @@ Rcpp::List spSSGP(const mat& z, const mat& y,  const cube& y_cube, const vec yin
   K(params.n_rows,params.n_rows,fill::eye);
   cube K_cube(params.n_rows, params.n_rows, S, fill::zeros),
   C(p2, p2, T, fill::zeros), R(p2, p2, T, fill::ones);
-  ;
   for(uword i=0; i < S; i++){
     K_cube.slice(i) = K;
   }
@@ -386,35 +374,35 @@ Rcpp::List spSSGP(const mat& z, const mat& y,  const cube& y_cube, const vec yin
   
   cube yeta_draw(T,niter,S,fill::zeros);
   mat yeta_draw_mat(T, S, fill::zeros);
-  for(int i=0; i<niter; i++) {
-    draw = (int) Rcpp::runif(1, 0, niter-burnin)(0);
-    for(int s=0;s<S;s++){
-      yeta_draw.slice(s).col(i) = emulate(y_cube.slice(s), calibrate,
-                        params, mc_beta.col(draw),
-                        mc_theta.slice(draw).row(s),
-                        mc_K.slice(draw),
-                        FF_cube(s),
-                        yinit(s),
-                        mc_v.col(draw));
-    }
-    calibrateParams(z, y, y_cube,
-                    mc_theta.slice(draw),
-                    params,
-                    mc_v.col(draw),
-                    tune2, tune3,
-                    mc_beta.col(draw),
-                    mc_K.slice(draw),
-                    FF, FF_cube,
-                    calibrate, sigma_z, S);
-    for(int sp=0; sp<S; sp++){
-      yeta_draw_mat.col(sp) = yeta_draw.slice(sp).col(i);
-    }
-    sampleVar(z.t(), yeta_draw_mat, sigma_z);
-    if(i>=burnin){
-      mc_sigma.col(i-burnin) = sigma_z;
-      mc_calibrate.row(i-burnin) = calibrate;
-    }
-  }
+  // for(int i=0; i<niter; i++) {
+  //   draw = (int) Rcpp::runif(1, 0, niter-burnin)(0);
+  //   for(int s=0;s<S;s++){
+  //     yeta_draw.slice(s).col(i) = emulate(y_cube.slice(s), calibrate,
+  //                       params, mc_beta.col(draw),
+  //                       mc_theta.slice(draw).row(s),
+  //                       mc_K.slice(draw),
+  //                       FF_cube(s),
+  //                       yinit(s),
+  //                       mc_v.col(draw));
+  //   }
+  //   calibrateParams(z, y, y_cube,
+  //                   mc_theta.slice(draw),
+  //                   params,
+  //                   mc_v.col(draw),
+  //                   tune2, tune3,
+  //                   mc_beta.col(draw),
+  //                   mc_K.slice(draw),
+  //                   FF, FF_cube,
+  //                   calibrate, sigma_z, S);
+  //   for(int sp=0; sp<S; sp++){
+  //     yeta_draw_mat.col(sp) = yeta_draw.slice(sp).col(i);
+  //   }
+  //   sampleVar(z.t(), yeta_draw_mat, sigma_z);
+  //   if(i>=burnin){
+  //     mc_sigma.col(i-burnin) = sigma_z;
+  //     mc_calibrate.row(i-burnin) = calibrate;
+  //   }
+  // }
   stop_overall = high_resolution_clock::now();
   duration = duration_cast<seconds>(stop_overall - start_overall);
   // std::cout << "TOTAL TIME:" << duration.count() << std::endl;

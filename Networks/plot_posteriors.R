@@ -1,35 +1,8 @@
-FF = array(0, dim=c(S*sims, S, length(times)-1))
-for(i in 1:dim(FF)[3]){
-  l <- split(FF1[,,i], rep(1:ncol(FF1[,,i]), each=nrow(FF1[,,i])))
-  FF[,,i] = as.matrix(Matrix::bdiag(l))
+for(i in 1:ncol(theta_design)){
+  matplot((fullySpatial$mc_beta[i,]),type="l",
+          main=paste("GP Parameter", i),ylab="y",xlab="MCMC draw")
 }
-yin = matrix(0,nrow=dim(FF)[1], ncol=dim(ysp)[3])
-for(i in 1:dim(ysp)[3]){
-  yin[, i] = c(ysp[,,i])
-}
-st_time = Sys.time();
-p2=1
-set.seed(1)
-fullySpatial = spDLMGP(z=t(z)[,-1], y=yin[,-1], y_cube = 
-                        array(ysp2[,-1,], dim=c(nrow(ysp2),ncol(ysp2)-1,dim(ysp2)[3])),
-                        yinit = ysp2[1,1,],
-                        niter=500, burnin=500/2,
-                        FF=FF, FF_cube=FFsp,
-                        C0=W, W=W,
-                        params=theta_design,
-                        delta_v=.9, delta_w=.95,
-                        tune=rep(.001,2), tune2=rep(.1,2), 
-                        nugget=1e-5)
-
-heatmap(round(apply(fullySpatial$mc_C,1:2,mean),10), Rowv = NA,Colv = NA)
-matrixcalc::is.positive.definite(round(apply(fullySpatial$mc_C,1:2,mean),10))
-# matplot(t(fullySpatial$mc_beta),type="l")
-# (Sys.time()-st_time)
-# for(i in 1:ncol(theta_design)){
-#   matplot((fullySpatial$mc_beta[i,]),type="l",
-#           main=paste("GP Parameter", i),ylab="y",xlab="MCMC draw")
-# }
-# matplot(fullySpatial$calibrate,type="l")
+matplot(fullySpatial$calibrate,type="l")
 # hist((spgasp$mc_sigma2), xlim=c(0,2),
 #      col=rgb(0/255,0/255,.502,.7), xlab="", breaks=50,
 #      probability = 1, main=TeX('$\\sigma_z $ posterior'), add=0)

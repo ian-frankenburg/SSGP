@@ -102,7 +102,6 @@ for(i in 1:dim(ysp_old)[3]){
   }
   FFsp[[i]] = tempArr
 }
-library(LICORS)
 unscaled = theta_design
 x = theta_design
 for(i in 1:ncol(theta_design)){
@@ -151,23 +150,23 @@ matplot(z,type="l")
 st_time = Sys.time();
 p2 = 1
 spgasp = parallel_mvcalibrator_discrepancy(z = z[-1,], 
-                       y = ysp_old[,-1,], 
-                       niter = 5000, burnin = 5000/2,
-                       m0=matrix(rep(0,p2)), C0=1*diag(p2), 
-                       FF = FFsp, G=1*diag(p2),
-                       params = theta_design,
-                       a0 = 1,b0=1,c0=1,
-                       tune=rep(.001,ncol(theta_design)), 
-                       tune2=rep(.001,ncol(theta_design)), 
-                       tune3 = .25,
-                       nugget = 0, S = S,
-                       alpha0 = 1, beta0 = 1, 
-                       yinit = ysp_old[1,1,],
-                       delta_w = .9,
-                       delta_vw = .1, delta_ww = .1,
-                       delta_v = .9, sigma_z=1,
-                       a0z = 1, b0z = 1, sptune=.1,
-                       discrep = 0);
+                                           y = ysp_old[,-1,], 
+                                           niter = 5000, burnin = 5000/2,
+                                           m0=matrix(rep(0,p2)), C0=1*diag(p2), 
+                                           FF = FFsp, G=1*diag(p2),
+                                           params = theta_design,
+                                           a0 = 1,b0=1,c0=1,
+                                           tune=rep(.001,ncol(theta_design)), 
+                                           tune2=rep(.001,ncol(theta_design)), 
+                                           tune3 = .25,
+                                           nugget = 0, S = S,
+                                           alpha0 = 1, beta0 = 1, 
+                                           yinit = ysp_old[1,1,],
+                                           delta_w = .9,
+                                           delta_vw = .1, delta_ww = .1,
+                                           delta_v = .9, sigma_z=1,
+                                           a0z = 1, b0z = 1, sptune=.1,
+                                           discrep = 0);
 matplot(spgasp$calibrate,type="l")
 
 ztest=(z)
@@ -251,8 +250,8 @@ save = spgasp$calibrate
        freq = 0, xlab=TeX('$\\sigma_z $'), add=0)
   hist(sqrt(rgamma(nrow(spgasp$calibrate),1,1)), xlim=c(0,2),
        breaks=10, freq = 0, xlab=TeX(
-    paste0('$\\eta_', i, "$")),
-    col=rgb(.678, .847, .902, alpha=.5),add=T)
+         paste0('$\\eta_', i, "$")),
+       col=rgb(.678, .847, .902, alpha=.5),add=T)
   points(y=0,x=sigma_z, col="red", lwd=4)
 }
 

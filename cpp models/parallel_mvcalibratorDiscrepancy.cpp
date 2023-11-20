@@ -276,7 +276,7 @@ void calibrateParams(const mat& z, const cube& y, const cube& theta, const mat& 
   
   // // compute MH ratio;
   mat logr = ll_star - ll 
-    + log(prod(calibrate))+log(prod(1-calibrate))
+  + log(prod(calibrate))+log(prod(1-calibrate))
     -log(prod(calibrate_star))-log(prod(1-calibrate_star));
     if(log(R::runif(0,1)) < logr(0,0)){
       calibrate = calibrate_star;
@@ -319,13 +319,13 @@ void calibrateParams(const mat& z, const cube& y, const cube& theta, const mat& 
     // }
 }
 
-void sampleVar(mat z, mat emulated, double& sigma2){
+void sampleVar(mat z, mat emulated, double& sigma2, const double z_a, const double z_b){
   double SSR = accu(pow(z - emulated,2));
-  double vinv = Rcpp::rgamma(1,z.n_elem/2.0,2.0/SSR)(0);
+  double vinv = Rcpp::rgamma(1,z_a+z.n_elem/2.0,z_b+2.0/SSR)(0);
   sigma2 = 1.0 / vinv;
 }
 
-
+// this is where i need to modify p2 to be AR(p2) model
 vec emulate(const mat& y, const rowvec& pred_params, const mat& params, 
             const vec& beta, const mat& theta,
             const mat& K, const cube& F, double yinit, const vec v){
@@ -346,7 +346,8 @@ vec emulate(const mat& y, const rowvec& pred_params, const mat& params,
     gamma_z(j) = exp(-dot(beta.t() % (pred_params - params.row(j)),(pred_params - params.row(j))));
     // gamma_z(j) = exp(-sum(beta.t() % abs(pred_params - params.row(j))));
   }
-  vec yinit2(1, fill::zeros);
+  int p2 = theta.n_rows;
+  vec yinit2(p2, fill::zeros);
   yinit2(0) = yinit;
   for(int t=0; t<T; t++){
     if(t==0){
@@ -441,7 +442,8 @@ Rcpp::List parallel_mvcalibrator_discrepancy(const mat& z, const cube& y, const 
                                              const double delta_vw, const double delta_ww,
                                              double a0z, double b0z,
                                              const vec yinit,
-                                             const int discrep, double sigma_z)
+                                             const int discrep,
+                                             double sigma_z, double z_a, double z_b)
 {
   int T = y.n_cols;
   int p = y.n_rows;
@@ -617,7 +619,7 @@ Rcpp::List parallel_mvcalibrator_discrepancy(const mat& z, const cube& y, const 
       for(int sp=0; sp<S; sp++){
         yeta_draw_mat.col(sp) = mc_yeta.slice(sp).col(j-burnin);
       }
-      sampleVar(z, yeta_draw_mat, sigma_z);
+      sampleVar(z, yeta_draw_mat, sigma_z, z_a, z_b);
       
       mc_calibrate.row(j-burnin) = calibrate;
       mc_sigma.col(j-burnin) = sigma_z;
