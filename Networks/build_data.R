@@ -15,7 +15,7 @@ start_run <- data.frame(
   activation=rep(1,34))
 
 # # make an adjacency matrix and randomly fill some cells with 1s
-N = 22
+N = 11
 network_orig=network <- make_tree(N, children = 2,mode = "undirected")
 plot(network)
 l = layout_nicely(network)
@@ -102,12 +102,12 @@ library(grid)
 library(gridExtra)
 
 library(lhs)
-sims=20
+sims=50
 cube = maximinLHS(sims,k = 2)
 dec = qunif(cube[,1],0,.2)
 ret = qunif(cube[,2],0,.5)
 S = nrow(dat)
-t_max = 10
+t_max = 11
 times = (0:t_max)
 FF = array(0, dim=c(sims, 1, t_max, S))
 ysp = array(0, dim=c(sims,S,length(times)))
@@ -134,7 +134,7 @@ for(i in 1:sims){
     FFc[i,1,,sp] = (ysp2[i,-length(times),sp])
   }
 }
-for(i in 1:10){
+for(i in 1:S){
   matplot((t(ysp[,i,])), type="l")
 }
 tempArr = array(0,dim=c(dim(FF)[1], dim(FF)[2], dim(FF)[3]))
@@ -184,7 +184,7 @@ ggplot(results, aes(x=time, y=activation, color=node)) +
   geom_line()
 
 z = (t(reshape(results, idvar = "node", timevar = "time", direction = "wide")[,-1]))
-sigma_z = .1
+sigma_z = .25
 z = log(z+1)
 z = matrix(rnorm(nrow(z)*ncol(z),0,sigma_z),nrow(z),ncol(z)) + z
 matplot(z,type="l")

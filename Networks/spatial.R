@@ -18,8 +18,8 @@ fullySpatial = spDLMGP(z=t(z)[,-1], y=yin[,-1], y_cube =
                         C0=W, W=W,
                         params=theta_design,
                         delta_v=.9, delta_w=.95,
-                        tune=rep(.001,2), tune2=rep(.1,2), 
-                        nugget=1e-5)
+                        tune=rep(.001,ncol(theta_design)), tune2=rep(.1,ncol(theta_design)), 
+                        nugget=1e-5, z_a = .1, z_b = .1)
 
 heatmap(round(apply(fullySpatial$mc_C,1:2,mean),10), Rowv = NA,Colv = NA)
 matrixcalc::is.positive.definite(round(apply(fullySpatial$mc_C,1:2,mean),10))
@@ -43,7 +43,6 @@ plot(sqrt(t(fullySpatial$mc_sigma2)),type="l")
 # apply(spgasp$calibrate,2,quantile)
 test
 save = fullySpatial$calibrate
-round(colMeans(fullySpatial$calibrate),3)
 {
   library(latex2exp)
   par(mfrow=c(2,2))
@@ -54,10 +53,10 @@ round(colMeans(fullySpatial$calibrate),3)
            col=rgb(0/255,0/255,.502,.7), xlim=c(0,1), cex.lab=2,
            freq = 0, xlab=TeX(
              paste0('$\\eta_', i, "$")), add=0)
-      hist(ind_spatial$calibrate[,i], breaks=10, main="", ylab="",
-           col=rgb(255/255,0/255,0,.5), xlim=c(0,1), cex.lab=2,
-           freq = 0, xlab=TeX(
-             paste0('$\\eta_', i, "$")), add=1)
+      # hist(ind_spatial$calibrate[,i], breaks=10, main="", ylab="",
+      #      col=rgb(255/255,0/255,0,.5), xlim=c(0,1), cex.lab=2,
+      #      freq = 0, xlab=TeX(
+      #        paste0('$\\eta_', i, "$")), add=1)
       hist(drw[,i], breaks=10, freq = 0, xlab=TeX(
         paste0('$\\eta_', i, "$")),
         col=rgb(.678, .847, .902, alpha=.2),add=T)
@@ -66,10 +65,10 @@ round(colMeans(fullySpatial$calibrate),3)
            col=rgb(0/255, 0/255, .502, .7), xlim=c(0,1), cex.lab=2,
            freq = 0, xlab=TeX(
              paste0('$\\eta_', i, "$")), add=0)
-      hist(ind_spatial$calibrate[,i], breaks=10, main="", ylab="",
-           col=rgb(255/255,0/255,0,.5), xlim=c(0,1), cex.lab=2,
-           freq = 0, xlab=TeX(
-             paste0('$\\eta_', i, "$")), add=1)
+      # hist(ind_spatial$calibrate[,i], breaks=10, main="", ylab="",
+      #      col=rgb(255/255,0/255,0,.5), xlim=c(0,1), cex.lab=2,
+      #      freq = 0, xlab=TeX(
+      #        paste0('$\\eta_', i, "$")), add=1)
       hist(drw[,i], xlim=c(0,1), breaks=10, freq = 0, xlab=TeX(
         paste0('$\\eta_', i, "$")), main="",
         col=rgb(.678, .847, .902, alpha=.2),add=T)
@@ -79,10 +78,10 @@ round(colMeans(fullySpatial$calibrate),3)
   hist(sqrt(fullySpatial$mc_sigma2), xlim=c(0,.25), cex.lab=2,ylab="",
        col=rgb(0/255,0/255,.502,.7), breaks=10, main="",
        freq = 0, xlab=TeX('$\\sigma_z $'), add=0)
-  hist(sqrt(ind_spatial$mc_sigma2), breaks=10, main="", ylab="",
-       col=rgb(255/255,0/255,0,.5), xlim=c(0,1), cex.lab=2,
-       freq = 0, xlab=TeX(
-         paste0('$\\eta_', i, "$")), add=1)
+  # hist(sqrt(ind_spatial$mc_sigma2), breaks=10, main="", ylab="",
+  #      col=rgb(255/255,0/255,0,.5), xlim=c(0,1), cex.lab=2,
+  #      freq = 0, xlab=TeX(
+  #        paste0('$\\eta_', i, "$")), add=1)
   hist(sqrt(rgamma(nrow(fullySpatial$calibrate),1,1)), xlim=c(0,2), breaks=10, freq = 0, xlab=TeX(
     paste0('$\\eta_', i, "$")),
     col=rgb(.678, .847, .902, alpha=.5),add=T)
